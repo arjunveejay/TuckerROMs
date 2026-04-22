@@ -162,7 +162,7 @@ class WaveFEM(abc.ABC):
         P[:, 0] = self.p0
         forcing = lambda t_ : self.MWinv @ self.forcing(x0, y0)*np.cos(omega * t_)
         
-        # Symplectic time integrato 
+        # Symplectic time integrator
         for i in range(1, len(t)):
             fHalf = forcing(t[i-1]/2+t[i]/2)
             qHalf = D_factor(2 / dt * Q[:, i - 1] + P[:, i - 1] + dt/2*fHalf)

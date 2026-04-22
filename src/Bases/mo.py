@@ -1,6 +1,6 @@
 import numpy as np
 
-def lidw(training_params, K, mu_test, *, eps=1e-12, rcond=1e-12, match_tol=0.0):
+def mo(training_params, K, mu_test, *, eps=1e-12, rcond=1e-12, match_tol=0.0):
     """
     Compute the weight vector e(mu) as described:
       - pick K nearest neighbors of mu among training params

@@ -70,24 +70,3 @@ class RBFWeights:
         else:
             return self._solver.solve(VARPHI)
 
-# -------------------------- example usage --------------------------
-if __name__ == "__main__":
-    # 1D toy sites
-    X = np.linspace(0, 1, 15)[:, None]
-
-    rbfw = RBFWeights(
-        mus=X,
-        basis="gaussian",  # or "imq", "mq", "phs"
-        eps=3.0,
-        order=-1,          # set >=0 to add polynomial tail (e.g., 0 for constant)
-        nugget=1e-12,
-    )
-
-    mu = np.array([0.37])
-    y = rbfw.weights(mu)          # (N,)
-    MU = np.linspace(0, 1, 50)[:, None]
-    Y = rbfw.weights_many(MU)     # (N,50)
-
-    # interpolation check at a node
-    e3 = rbfw.weights(X[3])
-    print("max offdiag error at node:", np.max(np.abs(e3 - np.eye(len(X))[:, 3])))

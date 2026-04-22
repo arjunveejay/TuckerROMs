@@ -5,12 +5,12 @@ from matplotlib.lines import Line2D
 import ngsolve as ng
 
 
-_METHODS = ["rbf", "mono", "lid"]
-_COLORS  = {"mono": "C0", "rbf": "C1", "lid": "C2"}
-_LABELS  = {"mono": "Monolithic", "rbf": "RBF", "lid": "MO"}
-_MARKERS = {"mono": "^", "rbf": "s", "lid": "o"}
-_MS      = {"mono": 6, "rbf": 7.5, "lid": 6}
-_LW      = {"mono": 2.2, "rbf": 2.6, "lid": 2.2}
+_METHODS = ["rbf", "mono", "mo"]
+_COLORS  = {"mono": "C0", "rbf": "C1", "mo": "C2"}
+_LABELS  = {"mono": "Monolithic", "rbf": "RBF", "mo": "MO"}
+_MARKERS = {"mono": "^", "rbf": "s", "mo": "o"}
+_MS      = {"mono": 6, "rbf": 7.5, "mo": 6}
+_LW      = {"mono": 2.2, "rbf": 2.6, "mo": 2.2}
 
 
 def plot_errors(errs, methods=None, xlabel=r"$r$"):
@@ -22,7 +22,7 @@ def plot_errors(errs, methods=None, xlabel=r"$r$"):
               Must contain ``r_arr`` and keys ``{m}_rom_train``,
               ``{m}_proj_train``, ``{m}_rom_test``, ``{m}_proj_test``
               for each method ``m`` in *methods*.
-    methods : list, optional  (default: ["rbf", "mono", "lid"])
+    methods : list, optional  (default: ["rbf", "mono", "mo"])
     xlabel  : str, x-axis label
     """
     if methods is None:
@@ -90,7 +90,7 @@ def eval_grid(fom, q_vec, N=80):
     return np.array([[gfu(fom.mesh(x, y)) for x in xs] for y in ys])
 
 
-def plot_contours(fom, Z_fom, Z_rbf, Z_mono, Z_lid,
+def plot_contours(fom, Z_fom, Z_rbf, Z_mono, Z_mo,
                   sol_label="Solution", err_label="Signed Error",
                   nlevels=20, N=80, clims=None, eclims=None):
     """
@@ -100,7 +100,7 @@ def plot_contours(fom, Z_fom, Z_rbf, Z_mono, Z_lid,
     Parameters
     ----------
     fom       : HeatFEM2D instance (for domain length L)
-    Z_fom, Z_rbf, Z_mono, Z_lid : (N, N) arrays from eval_grid
+    Z_fom, Z_rbf, Z_mono, Z_mo : (N, N) arrays from eval_grid
     sol_label : colorbar label for the solution row
     err_label : colorbar label for the error row
     nlevels   : number of contour levels
@@ -112,18 +112,18 @@ def plot_contours(fom, Z_fom, Z_rbf, Z_mono, Z_lid,
 
     E_rbf  = Z_fom - Z_rbf
     E_mono = Z_fom - Z_mono
-    E_lid  = Z_fom - Z_lid
+    E_mo  = Z_fom - Z_mo
 
     if clims is not None:
         vmin_sol, vmax_sol = clims
     else:
-        vmin_sol = min(Z_fom.min(), Z_rbf.min(), Z_mono.min(), Z_lid.min())
-        vmax_sol = max(Z_fom.max(), Z_rbf.max(), Z_mono.max(), Z_lid.max())
+        vmin_sol = min(Z_fom.min(), Z_rbf.min(), Z_mono.min(), Z_mo.min())
+        vmax_sol = max(Z_fom.max(), Z_rbf.max(), Z_mono.max(), Z_mo.max())
 
     if eclims is not None:
         emin, emax = eclims
     else:
-        emax = max(abs(E_rbf).max(), abs(E_mono).max(), abs(E_lid).max())
+        emax = max(abs(E_rbf).max(), abs(E_mono).max(), abs(E_mo).max())
         emin = -emax
 
     sol_levels = np.linspace(vmin_sol, vmax_sol, nlevels + 1)
@@ -137,12 +137,12 @@ def plot_contours(fom, Z_fom, Z_rbf, Z_mono, Z_lid,
     ax_fom   = fig.add_subplot(gs[0, 0])
     ax_rbf   = fig.add_subplot(gs[0, 1], sharey=ax_fom)
     ax_mono  = fig.add_subplot(gs[0, 2], sharey=ax_fom)
-    ax_lid   = fig.add_subplot(gs[0, 3], sharey=ax_fom)
+    ax_mo   = fig.add_subplot(gs[0, 3], sharey=ax_fom)
     ax_erbf  = fig.add_subplot(gs[1, 1])
     ax_emono = fig.add_subplot(gs[1, 2], sharey=ax_erbf)
-    ax_elid  = fig.add_subplot(gs[1, 3], sharey=ax_erbf)
+    ax_emo  = fig.add_subplot(gs[1, 3], sharey=ax_erbf)
 
-    for ax in [ax_rbf, ax_mono, ax_lid, ax_emono, ax_elid]:
+    for ax in [ax_rbf, ax_mono, ax_mo, ax_emono, ax_emo]:
         ax.tick_params(labelleft=False)
 
     def _plot(ax, Z, kw, show_ylabel=True):
@@ -165,13 +165,13 @@ def plot_contours(fom, Z_fom, Z_rbf, Z_mono, Z_lid,
     cf_sol = _plot(ax_fom,   Z_fom,  kw_sol, show_ylabel=True)
     _plot(ax_rbf,   Z_rbf,  kw_sol, show_ylabel=False)
     _plot(ax_mono,  Z_mono, kw_sol, show_ylabel=False)
-    _plot(ax_lid,   Z_lid,  kw_sol, show_ylabel=False)
+    _plot(ax_mo,   Z_mo,  kw_sol, show_ylabel=False)
     cf_err = _plot(ax_erbf,  E_rbf,  kw_err, show_ylabel=True)
     _plot(ax_emono, E_mono, kw_err, show_ylabel=False)
-    _plot(ax_elid,  E_lid,  kw_err, show_ylabel=False)
+    _plot(ax_emo,  E_mo,  kw_err, show_ylabel=False)
 
     for ax, lbl in zip(
-        [ax_fom, ax_rbf, ax_mono, ax_lid],
+        [ax_fom, ax_rbf, ax_mono, ax_mo],
         ["FOM",  "RBF",  "Monolithic", "MO"]
     ):
         ax.set_title(lbl)
@@ -181,11 +181,11 @@ def plot_contours(fom, Z_fom, Z_rbf, Z_mono, Z_lid,
     cbar_w   = 0.012
     cbar_gap = 0.02
 
-    pos_lid  = ax_lid.get_position()
-    pos_elid = ax_elid.get_position()
+    pos_mo  = ax_mo.get_position()
+    pos_emo = ax_emo.get_position()
 
-    cax_sol = fig.add_axes([pos_lid.x1  + cbar_gap, pos_lid.y0,  cbar_w, pos_lid.height])
-    cax_err = fig.add_axes([pos_elid.x1 + cbar_gap, pos_elid.y0, cbar_w, pos_elid.height])
+    cax_sol = fig.add_axes([pos_mo.x1  + cbar_gap, pos_mo.y0,  cbar_w, pos_mo.height])
+    cax_err = fig.add_axes([pos_emo.x1 + cbar_gap, pos_emo.y0, cbar_w, pos_emo.height])
 
     def _sci(x, _):
         if x == 0:
@@ -206,29 +206,29 @@ def plot_contours(fom, Z_fom, Z_rbf, Z_mono, Z_lid,
     cb_err.formatter = fmt
     cb_err.update_ticks()
 
-    label_x = pos_lid.x1 + cbar_gap + cbar_w + 0.01
-    fig.text(label_x, (pos_lid.y0  + pos_lid.y1)  / 2, sol_label,
+    label_x = pos_mo.x1 + cbar_gap + cbar_w + 0.01
+    fig.text(label_x, (pos_mo.y0  + pos_mo.y1)  / 2, sol_label,
              rotation=90, va='center', ha='left')
-    fig.text(label_x, (pos_elid.y0 + pos_elid.y1) / 2, err_label,
+    fig.text(label_x, (pos_emo.y0 + pos_emo.y1) / 2, err_label,
              rotation=90, va='center', ha='left')
 
     return fig
 
 
-def plot_singular_values(s_rbf, s_mono, s_lid, methods=None):
+def plot_singular_values(s_rbf, s_mono, s_mo, methods=None):
     """Normalized singular value decay for each basis type.
 
     Parameters
     ----------
     s_rbf  : 1-D array  singular values for Radial Basis Functions basis
     s_mono : 1-D array  singular values for Monolithic basis
-    s_lid  : 1-D array  singular values for MO basis
-    methods : list, optional  subset of ["rbf", "mono", "lid"] to plot
+    s_mo  : 1-D array  singular values for MO basis
+    methods : list, optional  subset of ["rbf", "mono", "mo"] to plot
     """
     if methods is None:
         methods = _METHODS
 
-    svs = {"rbf": np.asarray(s_rbf), "mono": np.asarray(s_mono), "lid": np.asarray(s_lid)}
+    svs = {"rbf": np.asarray(s_rbf), "mono": np.asarray(s_mono), "mo": np.asarray(s_mo)}
 
     local_methods = [m for m in methods if m != "mono"]
     n_plot = max(len(svs[m]) for m in local_methods) if local_methods else len(svs["mono"])

@@ -320,8 +320,8 @@ def _render_field_png_mpl(mesh_full, name, out_png,
     uu, vv = np.meshgrid(u_grid, v_grid)
 
     scalars    = [np.linalg.norm(field, axis=1), field[:, 0], field[:, 1], field[:, 2]]
-    titles     = [fr"$|\boldsymbol{{{name}}}|$", fr"$\boldsymbol{{{name}}}_x$",
-                  fr"$\boldsymbol{{{name}}}_y$", fr"$\boldsymbol{{{name}}}_z$"]
+    titles     = [fr"$|\boldsymbol{{{name}}}_h|$", fr"$\boldsymbol{{{name}}}_{{h,x}}$",
+                  fr"$\boldsymbol{{{name}}}_{{h,y}}$", fr"$\boldsymbol{{{name}}}_{{h,z}}$"]
     clim_keys  = ["mag", "x", "y", "z"]
     grids      = [griddata(points2d, s, (uu, vv), method="linear") for s in scalars]
 
@@ -374,12 +374,12 @@ def _render_field_png_mpl(mesh_full, name, out_png,
     plt.close(fig)
 
 
-_METHODS = ["mono", "rbf", "lid"]
-_COLORS  = {"mono": "C0", "rbf": "C1", "lid": "C2"}
-_LABELS  = {"mono": "Monolithic", "rbf": "RBF", "lid": "MO"}
-_MARKERS = {"mono": "^", "rbf": "s", "lid": "o"}
-_MS      = {"mono": 6, "rbf": 7.5, "lid": 6}
-_LW      = {"mono": 2.2, "rbf": 2.6, "lid": 2.2}
+_METHODS = ["mono", "rbf", "mo"]
+_COLORS  = {"mono": "C0", "rbf": "C1", "mo": "C2"}
+_LABELS  = {"mono": "Monolithic", "rbf": "RBF", "mo": "MO"}
+_MARKERS = {"mono": "^", "rbf": "s", "mo": "o"}
+_MS      = {"mono": 6, "rbf": 7.5, "mo": 6}
+_LW      = {"mono": 2.2, "rbf": 2.6, "mo": 2.2}
 
 
 def plot_errors(errs, methods=None, xlabel=r"$r$", figsize=None):
@@ -392,7 +392,7 @@ def plot_errors(errs, methods=None, xlabel=r"$r$", figsize=None):
               ``{m}_projE_train``, ``{m}_romE_test``, ``{m}_projE_test``,
               ``{m}_romB_train``, ``{m}_projB_train``, ``{m}_romB_test``,
               ``{m}_projB_test`` for each method ``m`` in *methods*.
-    methods : list, optional  (default: ["mono", "rbf", "lid"])
+    methods : list, optional  (default: ["mono", "rbf", "mo"])
     xlabel  : str, x-axis label
     """
     if methods is None:

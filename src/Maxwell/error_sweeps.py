@@ -8,7 +8,7 @@ Simple sweeps for:
 Supports three basis types:
   - mono: fixed global bases U_mono_E, U_mono_B
   - rbf : parametric bases from RBF weights + buildParBasis
-  - lid : parametric bases from LID weights + buildParBasis
+  - mo : parametric bases from LID weights + buildParBasis
 
 Any basis type can be wrapped with enrich_builder() to add curl enrichment:
   E basis augmented with Wk @ U_B, then M_E-orthonormalized
@@ -41,8 +41,8 @@ For rbf:
   tucker_tensor_E, tucker_tensor_B
   buildParBasis(tucker_tensor, weights) -> (U, s, extra)
 
-For lid:
-  lidw(params_train, k, mu, eps=..., rcond=...) -> weights
+For mo:
+  mo(params_train, k, mu, eps=..., rcond=...) -> weights
   tucker_tensor_E, tucker_tensor_B
   buildParBasis
 
@@ -145,11 +145,11 @@ def build_rbf_bases(rbfw_E, rbfw_B, tucker_tensor_E, tucker_tensor_B, buildParBa
     return builder
 
 
-def build_lid_bases(params_train, lidw, tucker_tensor_E, tucker_tensor_B, buildParBasis,
+def build_mo_bases(params_train, mo, tucker_tensor_E, tucker_tensor_B, buildParBasis,
                     k=15, eps=1e-14, rcond=1e-14):
     def builder(mu, rmax):
-        W_E = lidw(params_train, k, mu, eps=eps, rcond=rcond)
-        W_B = lidw(params_train, k, mu, eps=eps, rcond=rcond)
+        W_E = mo(params_train, k, mu, eps=eps, rcond=rcond)
+        W_B = mo(params_train, k, mu, eps=eps, rcond=rcond)
         U_E, _, _ = buildParBasis(tucker_tensor_E, W_E)
         U_B, _, _ = buildParBasis(tucker_tensor_B, W_B)
         return U_E[:, :rmax], U_B[:, :rmax]
