@@ -24,7 +24,7 @@ Three basis construction methods are compared:
 
 ### Maxwell equations (`experiments/Maxwell/`)
 
-Maxwell equations on a 3D domain, tracking the electric field $\boldsymbol{E}$ and magnetic flux density $\boldsymbol{B}$. The system is driven by a Gaussian current source at location $(x_0, y_0, z_0)$ with a fixed width, direction, and smooth temporal pulse envelope. Parameters: $\mu = (x_0, y_0, z_0) \in [0, 2]^3$.
+Maxwell equations on a 3D domain, tracking the electric field $\boldsymbol{E}$ and magnetic flux density $\boldsymbol{B}$. The system is driven by a Gaussian current source at location $(x_0, y_0, z_0)$ with a fixed width, direction, and smooth temporal envelope. Parameters: $\mu = (x_0, y_0, z_0) \in [0, 2]^3$.
 
 Two additional features distinguish this problem:
 
