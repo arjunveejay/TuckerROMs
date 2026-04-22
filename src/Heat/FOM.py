@@ -1,6 +1,4 @@
 # heatEq.py
-"""Models for the heat equation with piecewise constant diffusion."""
-
 __all__ = [
     "HeatFEM",
     "HeatFEM2D",

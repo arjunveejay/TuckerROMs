@@ -34,6 +34,11 @@ for i in range(X.shape[-1]):
 
 # Tucker decomposition
 print("Tucker")
+decomp = Tucker(rank=[30,30,30], init="svd", verbose=True, n_iter_max=5)
+tucker_tensor = decomp.fit_transform(X)
+tucker_tensor.factors[0] = Rinv @ tucker_tensor.factors[0]
+save_tucker_npz(os.path.join(savedir,"tucker_30x30x30_Mortho.npz"), tucker_tensor.core, tucker_tensor.factors)
+
 decomp = Tucker(rank=[60,60,60], init="svd", verbose=True, n_iter_max=5)
 tucker_tensor = decomp.fit_transform(X)
 tucker_tensor.factors[0] = Rinv @ tucker_tensor.factors[0]

@@ -4,6 +4,22 @@ import numpy as np
 import pyvista as pv
 from tqdm import tqdm
 from pathlib import Path
+import matplotlib.pyplot as plt
+
+from matplotlib.lines import Line2D
+from scipy.interpolate import griddata
+
+plt.rcParams.update({
+    "text.usetex": True,
+    "text.latex.preamble": r"\usepackage{amsmath}\usepackage{bm}",
+    "font.size": 20,
+    "font.family": "serif",
+    "axes.titlesize": 18,
+    "axes.labelsize": 20,
+    "xtick.labelsize": 18,
+    "ytick.labelsize": 18,
+    "legend.fontsize": 18,
+})
 
 ROOT = Path(__file__).resolve().parents[2]  
 sys.path.insert(0, str(ROOT))
@@ -124,9 +140,14 @@ def save_pngs(mesh, file_hdf5, prefix,
               image_size=(1400, 1100),
               atol=1e-12, rtol=0.0,
               on_missing="error",
-              reference_clims=None,   # <-- NEW: dict or None
-              return_clims=False):    # <-- NEW: if True and reference_clims None, return computed clims
+              reference_clims=None,
+              return_clims=False,
+              renderer="matplotlib",   # "matplotlib" or "pyvista"
+              show_colorbar=True):
     """
+    renderer: "matplotlib" (default) uses _render_field_png_mpl;
+              "pyvista" uses _render_field_png.
+
     reference_clims format:
       {
         "E": {"mag": (vmin,vmax), "x":(...), "y":(...), "z":(...)},
@@ -239,14 +260,195 @@ def save_pngs(mesh, file_hdf5, prefix,
         outE = f"{prefix}_t{ttag}_E.png"
         outB = f"{prefix}_t{ttag}_B.png"
 
-        _render_field_png(mesh, "E", outE,
-                          plane_origin=plane_origin, plane_normal=plane_normal,
-                          cmap=cmap, image_size=image_size,
-                          panel_clims=reference_clims["E"])
-        _render_field_png(mesh, "B", outB,
-                          plane_origin=plane_origin, plane_normal=plane_normal,
-                          cmap=cmap, image_size=image_size,
-                          panel_clims=reference_clims["B"])
+        _render_field_png_mpl(mesh, "E", outE,
+                              plane_origin=plane_origin, plane_normal=plane_normal,
+                              cmap=cmap, image_size=image_size,
+                              panel_clims=reference_clims["E"],
+                              show_colorbar=show_colorbar)
+        _render_field_png_mpl(mesh, "B", outB,
+                              plane_origin=plane_origin, plane_normal=plane_normal,
+                              cmap=cmap, image_size=image_size,
+                              panel_clims=reference_clims["B"],
+                              show_colorbar=show_colorbar)
 
     if return_clims:
         return reference_clims
+
+
+def _render_field_png_mpl(mesh_full, name, out_png,
+                          plane_origin=(0.5, 0.5, 0.5),
+                          plane_normal=(0, 0, 1),
+                          cmap="jet",
+                          image_size=(1200, 300),   # (width, height)
+                          top_view_axis="+z",
+                          panel_clims=None,
+                          show_colorbar=True):
+    """
+    Render a 1x4 panel (|field|, x, y, z) from mesh_full.cell_data[name] and save to PNG.
+    Uses PyVista for slicing/triangulation and matplotlib for rendering.
+
+    panel_clims (optional): dict with keys {"mag","x","y","z"} -> (vmin,vmax)
+      If a key is missing or None, auto-scales that panel.
+    """
+
+    W, H = map(int, image_size)
+    panel_clims = panel_clims or {}
+
+    # Use PyVista for slice, triangulation, and cell->point interpolation
+    ms = mesh_full.slice(normal=plane_normal, origin=plane_origin)
+    ms = ms.triangulate()
+    ms = ms.cell_data_to_point_data()
+
+    pts = ms.points                            # (N, 3)
+
+    # Project 3D points to the 2D viewing plane
+    _ax = top_view_axis.lstrip("+-")
+    if _ax == "z":
+        u, v = pts[:, 0], pts[:, 1]
+    elif _ax == "y":
+        u, v = pts[:, 0], pts[:, 2]
+    else:  # x
+        u, v = pts[:, 1], pts[:, 2]
+
+    field = ms.point_data[name]               # (N, 3)
+    points2d = np.column_stack([u, v])
+
+    # Interpolate each scalar onto a regular grid
+    res = 512
+    u_grid = np.linspace(u.min(), u.max(), res)
+    v_grid = np.linspace(v.min(), v.max(), res)
+    uu, vv = np.meshgrid(u_grid, v_grid)
+
+    scalars    = [np.linalg.norm(field, axis=1), field[:, 0], field[:, 1], field[:, 2]]
+    titles     = [fr"$|\boldsymbol{{{name}}}|$", fr"$\boldsymbol{{{name}}}_x$",
+                  fr"$\boldsymbol{{{name}}}_y$", fr"$\boldsymbol{{{name}}}_z$"]
+    clim_keys  = ["mag", "x", "y", "z"]
+    grids      = [griddata(points2d, s, (uu, vv), method="linear") for s in scalars]
+
+    extent = [u.min(), u.max(), v.min(), v.max()]
+
+    dpi = 150
+    fig, axes = plt.subplots(1, 4, figsize=(W / dpi, H / dpi), dpi=dpi,
+                             sharey=True)
+    fig.patch.set_facecolor("white")
+    fig.subplots_adjust(left=0.08, right=0.99, top=0.78, bottom=0.12, wspace=0.05)
+
+    for i, (ax, grid, title, ck) in enumerate(zip(axes, grids, titles, clim_keys)):
+        clim = panel_clims.get(ck)
+        vmin, vmax = clim if clim is not None else (np.nanmin(grid), np.nanmax(grid))
+
+        im = ax.imshow(grid, origin="lower", extent=extent, aspect="equal",
+                       cmap=cmap, vmin=vmin, vmax=vmax, interpolation="bilinear")
+
+        # Extreme ticks only
+        ax.set_xticks([u.min(), u.max()])
+        ax.xaxis.set_major_formatter(plt.FormatStrFormatter("%g"))
+        ax.tick_params(axis="x", labelsize=12)
+        ax.set_xlabel(r"$x_1$", fontsize=14, labelpad=-6)
+
+        if i == 0:
+            ax.set_yticks([v.min(), v.max()])
+            ax.yaxis.set_major_formatter(plt.FormatStrFormatter("%g"))
+            ax.tick_params(axis="y", labelsize=12)
+            ax.set_ylabel(r"$x_2$", fontsize=14, labelpad=-6)
+        else:
+            ax.tick_params(axis="y", left=False)
+
+        ax.text(0.97, 0.97, title, transform=ax.transAxes,
+                ha="right", va="top", fontsize=13, color="black", fontweight="bold",
+                bbox=dict(facecolor="white", edgecolor="none", pad=2.0, alpha=0.8))
+
+        cb = fig.colorbar(im, ax=ax, orientation="horizontal",
+                          pad=0.04, fraction=0.046, location="top")
+        cb.set_ticks([])
+        if show_colorbar:
+            cb.ax.text(0.0, 1.6, f"{vmin:.2e}", transform=cb.ax.transAxes,
+                       ha="left", va="bottom", fontsize=11)
+            cb.ax.text(1.0, 1.6, f"{vmax:.2e}", transform=cb.ax.transAxes,
+                       ha="right", va="bottom", fontsize=11)
+        else:
+            cb.ax.set_visible(False)
+
+    os.makedirs(os.path.dirname(out_png) or ".", exist_ok=True)
+    fig.savefig(out_png, dpi=dpi, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
+_METHODS = ["mono", "rbf", "lid"]
+_COLORS  = {"mono": "C0", "rbf": "C1", "lid": "C2"}
+_LABELS  = {"mono": "Monolithic", "rbf": "RBF", "lid": "MO"}
+_MARKERS = {"mono": "^", "rbf": "s", "lid": "o"}
+_MS      = {"mono": 6, "rbf": 7.5, "lid": 6}
+_LW      = {"mono": 2.2, "rbf": 2.6, "lid": 2.2}
+
+
+def plot_errors(errs, methods=None, xlabel=r"$r$", figsize=None):
+    """2×2 error plot for E and B fields with median + IQR band.
+
+    Parameters
+    ----------
+    errs    : dict-like (e.g. np.load(...))
+              Must contain ``r_arr`` and keys ``{m}_romE_train``,
+              ``{m}_projE_train``, ``{m}_romE_test``, ``{m}_projE_test``,
+              ``{m}_romB_train``, ``{m}_projB_train``, ``{m}_romB_test``,
+              ``{m}_projB_test`` for each method ``m`` in *methods*.
+    methods : list, optional  (default: ["mono", "rbf", "lid"])
+    xlabel  : str, x-axis label
+    """
+    if methods is None:
+        methods = _METHODS
+
+    r_arr = errs["r_arr"]
+
+    def _subplot(ax, title_text, key_fmt_rom, key_fmt_proj):
+        for m in methods:
+            A   = errs[key_fmt_rom.format(m=m)]
+            med = np.median(A, axis=1)
+            lo  = np.quantile(A, 0.25, axis=1)
+            hi  = np.quantile(A, 0.75, axis=1)
+            ax.plot(r_arr, med, color=_COLORS[m], lw=_LW[m],
+                    marker=_MARKERS[m], ms=_MS[m])
+            ax.fill_between(r_arr, lo, hi, color=_COLORS[m], alpha=0.07)
+
+            P    = errs[key_fmt_proj.format(m=m)]
+            pmed = np.median(P, axis=1)
+            ax.plot(r_arr, pmed, color=_COLORS[m], lw=_LW[m], ls="--",
+                    marker=_MARKERS[m], ms=_MS[m], alpha=0.95)
+
+        ax.set_yscale("log")
+        ax.grid(True, which="major", ls="-", alpha=0.35)
+        ax.text(0.98, 0.98, title_text, transform=ax.transAxes,
+                ha="right", va="top", fontsize=18,
+                bbox=dict(facecolor="white", edgecolor="none", alpha=0.75, pad=2.0))
+
+    if figsize is None: 
+        figsize = (15, 9)
+
+    fig, ax = plt.subplots(2, 2, figsize=figsize,
+                           constrained_layout=True, sharex=True, sharey=True)
+
+    _subplot(ax[0, 0], r"$\boldsymbol{e}$ Training", "{m}_romE_train", "{m}_projE_train")
+    _subplot(ax[0, 1], r"$\boldsymbol{e}$ Testing",  "{m}_romE_test",  "{m}_projE_test")
+    _subplot(ax[1, 0], r"$\boldsymbol{b}$ Training", "{m}_romB_train", "{m}_projB_train")
+    _subplot(ax[1, 1], r"$\boldsymbol{b}$ Testing",  "{m}_romB_test",  "{m}_projB_test")
+
+    for a in ax[1, :]:
+        a.set_xlabel(xlabel)
+    for a in ax[:, 0]:
+        a.set_ylabel(r"Relative error")
+
+    method_handles = [
+        Line2D([0], [0], color=_COLORS[m], lw=_LW[m],
+               marker=_MARKERS[m], markersize=_MS[m], label=_LABELS[m])
+        for m in methods
+    ]
+    style_handles = [
+        Line2D([0], [0], color="k", lw=2.2, ls="--", label="Projection")
+    ]
+
+    fig.subplots_adjust(bottom=0.16)
+    fig.legend(method_handles + style_handles,
+               [h.get_label() for h in method_handles + style_handles],
+               loc="lower center", ncol=5, frameon=False,
+               bbox_to_anchor=(0.5, -0.05))
+    return fig

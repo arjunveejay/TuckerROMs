@@ -34,14 +34,14 @@ for i in range(X.shape[-1]):
     X[...,i] = R@X[...,i] 
 
 # Tucker decomposition
-print("Tucker")
+print("Tucker: 60x60x60")
 decomp = Tucker(rank=[60,60,60], init="svd", verbose=True, n_iter_max=5)
 tucker_tensor = decomp.fit_transform(X)
 tucker_tensor.factors[0] = Rinv @ tucker_tensor.factors[0]
 save_tucker_npz(os.path.join(savedir,"tucker_60x60x60_Mortho.npz"), tucker_tensor.core, tucker_tensor.factors)
 
 # Tucker decomposition
-print("Tucker")
+print("Tucker: 120x120x120")
 decomp = Tucker(rank=[120,120,120], init="svd", verbose=True, n_iter_max=5)
 tucker_tensor = decomp.fit_transform(X)
 tucker_tensor.factors[0] = Rinv @ tucker_tensor.factors[0]

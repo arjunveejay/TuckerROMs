@@ -26,7 +26,7 @@ print("Training parameters: ", int(train_ratio*Ns))
 
 print("Single sample run: ")
 t = np.linspace(0, 8*np.pi, 501)
-fom = WaveFEM2D(L=2 * np.pi, h=0.5, orderW=2, orderV=2, width=.5)
+fom = WaveFEM2D(L=2 * np.pi, h=0.5, orderW=2, orderV=2, width=.5/np.sqrt(2))
 print(fom)
 Q,P = fom.solve(t, 1, 0.8*np.pi, np.pi)
 

@@ -338,7 +338,7 @@ class WaveFEM2D(WaveFEM):
     
     def forcing(self, x0, y0):
         f = ng.LinearForm(self.W)
-        g = ng.exp(-((ng.x-x0)**2+(ng.y-y0)**2)/(self.width**2))
+        g = ng.exp(-0.5*((ng.x-x0)**2+(ng.y-y0)**2)/(self.width**2))
         g *= ng.sin(ng.x/2)*ng.sin(ng.y/2)
         f += g*self.W.TestFunction()*ng.dx(bonus_intorder=4)
         f = f.Assemble().vec.FV().NumPy()
