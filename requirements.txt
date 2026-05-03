@@ -1,0 +1,13 @@
+numpy==2.4.4
+scipy==1.17.1
+matplotlib==3.10.8
+h5py==3.16.0
+tensorly==0.9.0
+tqdm==4.67.3
+pyvista==0.46.4
+imageio==2.37.2
+ipython==9.4.0
+ngsolve==6.2.2505
+netgen-mesher==6.2.2505
+scikit-sparse==0.4.16
+treverhines-rbf==2025.7.4.1
